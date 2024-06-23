@@ -20,6 +20,7 @@ namespace WindowsFormsAppClock
             InitializeComponent();
             comboboxInitialzation();  // 下拉選單初始化
             timerClock.Start();
+
         }
         List<string> hours = new List<string>();            // 小時清單
         List<string> minutes = new List<string>();          // 分鐘清單   
@@ -33,22 +34,36 @@ namespace WindowsFormsAppClock
         Stopwatch sw = new Stopwatch();                         // 宣告一個碼表物件
 
 
+        bool isCountDownReset = true;                           // 用來紀錄是不是重新設定
+        TimeSpan ts;                                            // 宣告一個時間間隔變數
+
+
         // 指定聲音檔的相對路徑，可以使用MP3
         string audioFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "9convert.com - This Is Halloween The Actual Instrumental");
 
 
         private void comboboxInitialzation()
-        {
-            // 設定小時下拉選單的選單內容，建立小時的清單，數字範圍為00-23
+        {// 設定小時下拉選單的選單內容，建立小時的清單，數字範圍為00-23
             for (int i = 0; i <= 23; i++)
+            {
                 comboBoxH.Items.Add(string.Format("{0:00}", i));
-            comboBoxH.SelectedIndex = 0;
+                cmbCountHour.Items.Add(string.Format("{0:00}", i));
+            }
 
             // 設定分鐘下拉選單的選單內容，建立分鐘的清單，數字範圍為00-59
             for (int i = 0; i <= 59; i++)
+            {
                 comboBoxM.Items.Add(string.Format("{0:00}", i));
-            comboBoxM.SelectedIndex = 0;
+                cmbCountMin.Items.Add(string.Format("{0:00}", i));
+                cmbCountSecond.Items.Add(string.Format("{0:00}", i));
+            }
 
+            comboBoxH.SelectedIndex = 0;
+            comboBoxM.SelectedIndex = 0;
+            cmbCountHour.SelectedIndex = 0;
+            cmbCountMin.SelectedIndex = 0;
+            cmbCountSecond.SelectedIndex = 0;
+        
 
         }
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -83,7 +98,7 @@ namespace WindowsFormsAppClock
                     stopWaveOut();
 
                     // 指定聲音檔的相對路徑，可以使用MP3
-                    string audioFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "alert.wav");
+                    string audioFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "9convert.com - This Is Halloween The Actual Instrumental");
 
                     // 使用 AudioFileReader 來讀取聲音檔
                     audioFileReader = new AudioFileReader(audioFilePath);
@@ -191,6 +206,75 @@ namespace WindowsFormsAppClock
                 i--;
             }
 
+        }
+
+        private void timerCountDown_Tick(object sender, EventArgs e)// timerCountDown_tick：每一秒執行一次
+        {
+            txtCountDown.Text = ts.ToString("hh':'mm':'ss");    // 顯示時間
+            ts = ts.Subtract(TimeSpan.FromSeconds(1));          // 每一秒鐘將顯示時間減掉一秒
+
+            if (txtCountDown.Text == "00:00:00")
+            {
+                try
+                {
+                    stopWaveOut();
+
+                    // 指定聲音檔的相對路徑，可以使用MP3
+                    string audioFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "alert.wav");
+
+                    // 使用 AudioFileReader 來讀取聲音檔
+                    audioFileReader = new AudioFileReader(audioFilePath);
+
+                    // 初始化 WaveOutEvent
+                    waveOut = new WaveOutEvent();
+                    waveOut.Init(audioFileReader);
+
+                    // 播放聲音檔
+                    waveOut.Play();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("無法播放聲音檔，錯誤資訊: " + ex.Message);
+                }
+                finally
+                {
+                    timerCountDown.Stop();         // 停止鬧鐘計時器
+                }
+            }
+        }
+        private void cmbCountHour_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btnCountStart_Click(object sender, EventArgs e)
+        {
+            // 進行判斷，判斷是不是有按過停止計時器按鍵
+            if (isCountDownReset == true)
+            {
+                int Hour = int.Parse(cmbCountHour.SelectedItem.ToString());
+                int Min = int.Parse(cmbCountMin.SelectedItem.ToString());
+                int Sec = int.Parse(cmbCountSecond.SelectedItem.ToString());
+                ts = new TimeSpan(Hour, Min, Sec); // 設定倒數時間
+            }
+            isCountDownReset = false;
+            timerCountDown.Start();
+        }
+
+        private void btnCountPause_Click(object sender, EventArgs e)
+        {
+            timerCountDown.Stop();
+        }
+
+        private void btnCountStop_Click(object sender, EventArgs e)
+        {
+            stopWaveOut(); // 關閉鬧鐘聲音
+            isCountDownReset = true;
+            timerCountDown.Stop();
+            txtCountDown.Text = "00:00:00";
+            cmbCountHour.SelectedIndex = 0;
+            cmbCountMin.SelectedIndex = 0;
+            cmbCountSecond.SelectedIndex = 0;
         }
     }
 }
